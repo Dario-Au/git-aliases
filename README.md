@@ -1,4 +1,4 @@
-# git-aliases
+# list of git aliases
 ```
 upstream = "!f() { \
 		branch=${1:-main}; \
