@@ -1,4 +1,6 @@
 # list of git aliases
+open gitconfig: `git config --global --edit`
+
 ```
 upstream = "!f() { \
 		branch=${1:-main}; \
