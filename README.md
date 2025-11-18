@@ -96,18 +96,18 @@ fix = "!f() { \
 	git reflog; \
 	printf '\\n'; \
 	if [ -n \"$1\" ]; then \
-			sel=\"$1\"; \
+		sel=\"$1\"; \
 	else \
-			printf 'Reset to HEAD@: '; \
-			IFS= read -r sel; \
+		printf 'Reset to HEAD@: '; \
+		IFS= read -r sel; \
 	fi; \
 	if [ -z \"${sel}\" ]; then \
-			echo 'Aborted: no selection'; \
-			return 0; \
+		echo 'Aborted: no selection'; \
+		return 0; \
 	fi; \
 	case \"${sel}\" in \
-			''|*[!0-9]*) echo 'Aborted: selection must be a number'; return 1 ;; \
-			*) ;; \
+		''|*[!0-9]*) echo 'Aborted: selection must be a number'; return 1 ;; \
+		*) ;; \
 	esac; \
 	target=\"HEAD@{${sel}}\"; \
 	echo \"Resetting to ${target}\"; \
