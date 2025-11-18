@@ -91,6 +91,7 @@ patch = "!f() { \
 out = "!f() {	\
 	git checkout -b ${1}; \
 }; f \"$@\""
+
 fix = "!f() { \
 	git reflog; \
 	printf '\\n'; \
@@ -116,5 +117,6 @@ fix = "!f() { \
 continue = rebase --continue
 
 undo = reset --soft HEAD~1
+
 here = rev-parse --abbrev-ref HEAD
 ```
