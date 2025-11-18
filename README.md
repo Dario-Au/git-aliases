@@ -99,16 +99,16 @@ fix = "!f() { \
 			sel=\"$1\"; \
 	else \
 			printf 'Reset to HEAD@: '; \
-			IFS= read sel; \
+			IFS= read -r sel; \
 	fi; \
 	if [ -z \"${sel}\" ]; then \
 			echo 'Aborted: no selection'; \
 			return 0; \
 	fi; \
-	if ! printf '%s' \"${sel}\" | grep -qE '^[0-9]+$'; then \
-			echo 'Aborted: selection must be a number'; \
-			return 1; \
-	fi; \
+	case \"${sel}\" in \
+			''|*[!0-9]*) echo 'Aborted: selection must be a number'; return 1 ;; \
+			*) ;; \
+	esac; \
 	target=\"HEAD@{${sel}}\"; \
 	echo \"Resetting to ${target}\"; \
 	git reset --hard \"${target}\"; \
