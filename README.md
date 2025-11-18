@@ -2,6 +2,8 @@
 open gitconfig: `git config --global --edit`
 
 ```
+edit = config --global --edit
+
 restart = "!f() { \
 		branch=${1:-main}; \
 		echo \"WARNING: This will discard all local changes on $branch.\"; \
@@ -89,9 +91,30 @@ patch = "!f() { \
 out = "!f() {	\
 	git checkout -b ${1}; \
 }; f \"$@\""
+fix = "!f() { \
+	git reflog; \
+	printf '\\n'; \
+	if [ -n \"$1\" ]; then \
+			sel=\"$1\"; \
+	else \
+			printf 'Reset to HEAD@: '; \
+			IFS= read sel; \
+	fi; \
+	if [ -z \"${sel}\" ]; then \
+			echo 'Aborted: no selection'; \
+			return 0; \
+	fi; \
+	if ! printf '%s' \"${sel}\" | grep -qE '^[0-9]+$'; then \
+			echo 'Aborted: selection must be a number'; \
+			return 1; \
+	fi; \
+	target=\"HEAD@{${sel}}\"; \
+	echo \"Resetting to ${target}\"; \
+	git reset --hard \"${target}\"; \
+}; f \"$@\""
 
 continue = rebase --continue
 
+undo = reset --soft HEAD~1
 here = rev-parse --abbrev-ref HEAD
-
 ```
