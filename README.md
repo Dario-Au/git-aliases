@@ -119,8 +119,8 @@ this = "!f() { \
 	\
 	status=$(git status --porcelain); \
 	if [ -z \"$status\" ]; then \
-			echo 'Nothing to do -- working tree clean.'; \
-			return 0; \
+		echo 'Nothing to do -- working tree clean.'; \
+		return 0; \
 	fi; \
 	\
 	if [ -n \"$GIT_EDITOR\" ]; then EDITOR_CMD=\"$GIT_EDITOR\"; \
@@ -131,84 +131,84 @@ this = "!f() { \
 	echo \"hint: Waiting for your editor to close the file...\"; \
 	\
 	if command -v mktemp >/dev/null 2>&1; then \
-			tmp=$(mktemp \"${TMPDIR:-/tmp}/git-this-XXXXXX\"); \
-			stash_list=$(mktemp \"${TMPDIR:-/tmp}/git-this-stash-XXXXXX\"); \
+		tmp=$(mktemp \"${TMPDIR:-/tmp}/git-this-XXXXXX\"); \
+		stash_list=$(mktemp \"${TMPDIR:-/tmp}/git-this-stash-XXXXXX\"); \
 	else \
-			tmp=\"${TMPDIR:-/tmp}/git-this-$$\"; \
-			stash_list=\"${TMPDIR:-/tmp}/git-this-stash-$$\"; \
+		tmp=\"${TMPDIR:-/tmp}/git-this-$$\"; \
+		stash_list=\"${TMPDIR:-/tmp}/git-this-stash-$$\"; \
 	fi; \
 	trap 'rm -f \"$tmp\" \"$stash_list\"' EXIT INT TERM; \
 	: > \"$stash_list\"; \
 	\
 	{ \
-			echo '# [x] stage  [ ] unstage  [s] stash  [D] discard'; \
-			echo '# Lines starting with # are ignored.'; \
-			echo ''; \
-			echo '# Staged Changes:'; \
-			printf '%s\\n' \"$status\" | grep '^[AMDRTC]' | while IFS= read -r line; do \
-					file=$(printf '%s' \"$line\" | cut -c4-); \
-					case \"$file\" in *' -> '*) file=${file##* -> };; esac; \
-					printf '[x] %s\\n' \"$file\"; \
-			done; \
-			echo ''; \
-			echo '# Unstaged Changes:'; \
-			printf '%s\\n' \"$status\" | grep '^.[MDRTC]' | while IFS= read -r line; do \
-					file=$(printf '%s' \"$line\" | cut -c4-); \
-					case \"$file\" in *' -> '*) file=${file##* -> };; esac; \
-					printf '[ ] %s\\n' \"$file\"; \
-			done; \
-			echo ''; \
-			echo '# Untracked Files:'; \
-			printf '%s\\n' \"$status\" | grep '^??' | while IFS= read -r line; do \
-					file=$(printf '%s' \"$line\" | cut -c4-); \
-					printf '[ ] %s\\n' \"$file\"; \
-			done; \
+		echo '# [x] stage  [ ] unstage  [s] stash  [D] discard'; \
+		echo '# Lines starting with # are ignored.'; \
+		echo ''; \
+		echo '# Staged Changes:'; \
+		printf '%s\\n' \"$status\" | grep '^[AMDRTC]' | while IFS= read -r line; do \
+			file=$(printf '%s' \"$line\" | cut -c4-); \
+			case \"$file\" in *' -> '*) file=${file##* -> };; esac; \
+			printf '[x] %s\\n' \"$file\"; \
+		done; \
+		echo ''; \
+		echo '# Unstaged Changes:'; \
+		printf '%s\\n' \"$status\" | grep '^.[MDRTC]' | while IFS= read -r line; do \
+			file=$(printf '%s' \"$line\" | cut -c4-); \
+			case \"$file\" in *' -> '*) file=${file##* -> };; esac; \
+			printf '[ ] %s\\n' \"$file\"; \
+		done; \
+		echo ''; \
+		echo '# Untracked Files:'; \
+		printf '%s\\n' \"$status\" | grep '^??' | while IFS= read -r line; do \
+			file=$(printf '%s' \"$line\" | cut -c4-); \
+			printf '[ ] %s\\n' \"$file\"; \
+		done; \
 	} > \"$tmp\"; \
 	\
 	eval \"$EDITOR_CMD \\\"$tmp\\\"\"; \
 	if [ $? -ne 0 ]; then \
-			echo 'Editor exited with an error -- aborting.'; \
-			return 1; \
+		echo 'Editor exited with an error -- aborting.'; \
+		return 1; \
 	fi; \
 	\
 	section=''; \
 	cr=$(printf '\\r'); \
 	while IFS= read -r line; do \
-			line=${line%$cr}; \
-			case \"$line\" in \
-					'# Staged'*) section=staged; continue;; \
-					'# Unstaged'*) section=unstaged; continue;; \
-					'# Untracked'*) section=untracked; continue;; \
-					'#'*|'') continue;; \
-			esac; \
-			case \"$line\" in '['?'] '*) ;; *) continue;; esac; \
-			mark=$(printf '%s' \"$line\" | cut -c2); \
-			file=$(printf '%s' \"$line\" | cut -c5-); \
-			case \"$mark\" in \
-					x|X) \
-							if [ \"$section\" != staged ]; then \
-									git add -- \"$file\"; \
-							fi;; \
-					s|S) \
-							printf '%s\\0' \"$file\" >> \"$stash_list\";; \
-					D) \
-							if [ \"$section\" = staged ]; then \
-									git restore --staged -- \"$file\" 2>/dev/null; \
-							fi; \
-							if git ls-files --error-unmatch -- \"$file\" >/dev/null 2>&1; then \
-									git restore -- \"$file\" 2>/dev/null; \
-							else \
-									git clean -f -- \"$file\" 2>/dev/null; \
-							fi;; \
-					' ') \
-							if [ \"$section\" = staged ]; then \
-									git restore --staged -- \"$file\" 2>/dev/null; \
-							fi;; \
-			esac; \
+		line=${line%$cr}; \
+		case \"$line\" in \
+			'# Staged'*) section=staged; continue;; \
+			'# Unstaged'*) section=unstaged; continue;; \
+			'# Untracked'*) section=untracked; continue;; \
+			'#'*|'') continue;; \
+		esac; \
+		case \"$line\" in '['?'] '*) ;; *) continue;; esac; \
+		mark=$(printf '%s' \"$line\" | cut -c2); \
+		file=$(printf '%s' \"$line\" | cut -c5-); \
+		case \"$mark\" in \
+			x|X) \
+				if [ \"$section\" != staged ]; then \
+					git add -- \"$file\"; \
+				fi;; \
+			s|S) \
+				printf '%s\\0' \"$file\" >> \"$stash_list\";; \
+			D) \
+				if [ \"$section\" = staged ]; then \
+					git restore --staged -- \"$file\" 2>/dev/null; \
+				fi; \
+				if git ls-files --error-unmatch -- \"$file\" >/dev/null 2>&1; then \
+					git restore -- \"$file\" 2>/dev/null; \
+				else \
+					git clean -f -- \"$file\" 2>/dev/null; \
+				fi;; \
+			' ') \
+				if [ \"$section\" = staged ]; then \
+					git restore --staged -- \"$file\" 2>/dev/null; \
+				fi;; \
+		esac; \
 	done < \"$tmp\"; \
 	\
 	if [ -s \"$stash_list\" ]; then \
-			xargs -0 git stash push -m \"Stashed $(date +%Y-%m-%d_%H:%M)\" -- < \"$stash_list\"; \
+		xargs -0 git stash push -m \"Stashed $(date +%Y-%m-%d_%H:%M)\" -- < \"$stash_list\"; \
 	fi; \
 }; f"
 
