@@ -3,7 +3,6 @@ open gitconfig: `git config --global --edit`
 
 ```
 edit = config --global --edit
-
 restart = "!f() { \
 	branch=${1:-main}; \
 	echo \"WARNING: This will discard all local changes on $branch.\"; \
@@ -14,7 +13,6 @@ restart = "!f() { \
 			echo 'Aborted.'; \
 	fi; \
 }; f \"$@\""
-
 refresh = "!f() { \
 	echo fetching...; \
 	git fetch; \
@@ -46,8 +44,7 @@ refresh = "!f() { \
 		echo ERROR: Operation failed; \
 	fi; \
 }; f \"$@\""
-
-patch = "!f() { \
+adjust = "!f() { \
 	branch=$(git rev-parse --abbrev-ref HEAD); \
 	if ! git diff --quiet || ! git diff --cached --quiet; then \
 		echo 'You have uncommitted changes. Please commit or stash them first.'; \
@@ -87,12 +84,14 @@ patch = "!f() { \
 		echo \"Aborted.\"; \
 	fi; \
 }; f \"$@\""
-
 out = "!f() {	\
 	git checkout -b ${1}; \
 }; f \"$@\""
-
 fix = "!f() { \
+	if ! git diff --quiet || ! git diff --cached --quiet; then \
+		echo 'You have uncommitted changes. Please commit or stash them first.'; \
+		exit 1; \
+	fi; \
 	git reflog; \
 	printf '\\n'; \
 	if [ -n \"$1\" ]; then \
@@ -113,7 +112,6 @@ fix = "!f() { \
 	echo \"Resetting to ${target}\"; \
 	git reset --hard \"${target}\"; \
 }; f \"$@\""
-
 this = "!f() { \
 	cd -- \"$(git rev-parse --show-toplevel)\" || return 1; \
 	\
@@ -142,17 +140,25 @@ this = "!f() { \
 	\
 	{ \
 		echo '# [x] stage  [ ] unstage  [s] stash  [D] discard'; \
+		echo '# For conflicts: [x] git add (resolve)  [D] git rm (remove)'; \
 		echo '# Lines starting with # are ignored.'; \
 		echo ''; \
+		echo '# Conflicted Files:'; \
+		printf '%s\\n' \"$status\" | grep -E '^(DD|AU|UA|DU|UD|AA|UU) ' | while IFS= read -r line; do \
+			file=$(printf '%s' \"$line\" | cut -c4-); \
+			case \"$file\" in *' -> '*) file=${file##* -> };; esac; \
+			printf '[ ] %s\\n' \"$file\"; \
+		done; \
+		echo ''; \
 		echo '# Staged Changes:'; \
-		printf '%s\\n' \"$status\" | grep '^[AMDRTC]' | while IFS= read -r line; do \
+		printf '%s\\n' \"$status\" | grep '^[AMDRTC]' | grep -vE '^(DD|AU|UA|DU|UD|AA|UU) ' | while IFS= read -r line; do \
 			file=$(printf '%s' \"$line\" | cut -c4-); \
 			case \"$file\" in *' -> '*) file=${file##* -> };; esac; \
 			printf '[x] %s\\n' \"$file\"; \
 		done; \
 		echo ''; \
 		echo '# Unstaged Changes:'; \
-		printf '%s\\n' \"$status\" | grep '^.[MDRTC]' | while IFS= read -r line; do \
+		printf '%s\\n' \"$status\" | grep '^.[MDRTC]' | grep -vE '^(DD|AU|UA|DU|UD|AA|UU) ' | while IFS= read -r line; do \
 			file=$(printf '%s' \"$line\" | cut -c4-); \
 			case \"$file\" in *' -> '*) file=${file##* -> };; esac; \
 			printf '[ ] %s\\n' \"$file\"; \
@@ -176,6 +182,7 @@ this = "!f() { \
 	while IFS= read -r line; do \
 		line=${line%$cr}; \
 		case \"$line\" in \
+			'# Conflicted'*) section=conflicted; continue;; \
 			'# Staged'*) section=staged; continue;; \
 			'# Unstaged'*) section=unstaged; continue;; \
 			'# Untracked'*) section=untracked; continue;; \
@@ -192,13 +199,17 @@ this = "!f() { \
 			s|S) \
 				printf '%s\\0' \"$file\" >> \"$stash_list\";; \
 			D) \
-				if [ \"$section\" = staged ]; then \
-					git restore --staged -- \"$file\" 2>/dev/null; \
-				fi; \
-				if git ls-files --error-unmatch -- \"$file\" >/dev/null 2>&1; then \
-					git restore -- \"$file\" 2>/dev/null; \
+				if [ \"$section\" = conflicted ]; then \
+					git rm -f -- \"$file\" 2>/dev/null; \
 				else \
-					git clean -f -- \"$file\" 2>/dev/null; \
+					if [ \"$section\" = staged ]; then \
+						git restore --staged -- \"$file\" 2>/dev/null; \
+					fi; \
+					if git ls-files --error-unmatch -- \"$file\" >/dev/null 2>&1; then \
+						git restore -- \"$file\" 2>/dev/null; \
+					else \
+						git clean -f -- \"$file\" 2>/dev/null; \
+					fi; \
 				fi;; \
 			' ') \
 				if [ \"$section\" = staged ]; then \
@@ -211,7 +222,6 @@ this = "!f() { \
 		xargs -0 git stash push -m \"Stashed $(date +%Y-%m-%d_%H:%M)\" -- < \"$stash_list\"; \
 	fi; \
 }; f"
-
 publish = "!f() { \
 	branch=$(git rev-parse --abbrev-ref HEAD); \
 	if [ \"$branch\" = main ]; then \
@@ -221,7 +231,6 @@ publish = "!f() { \
 	git push origin HEAD:$branch; \
 	git branch -u origin/$branch; \
 }; f"
-
 force = "!f() { \
 	branch=$(git rev-parse --abbrev-ref HEAD); \
 	read -p \"Force-push to $branch? (y/N) \" confirm; \
@@ -231,9 +240,15 @@ force = "!f() { \
 		echo \"Aborted.\"; \
 	fi; \
 }; f"
-
+away = "!f() { \
+	git submodule foreach --recursive git reset --hard HEAD; \
+	git submodule foreach --recursive git clean -fdx; \
+	git submodule update --recursive; \
+}; f"
 pop = stash pop
 continue = rebase --continue
 undo = reset --soft HEAD~1
 here = rev-parse --abbrev-ref HEAD
+dif = diff HEAD
+done = commit -S -m 
 ```
